@@ -28,7 +28,7 @@
             position: relative;
             width: 380px;
             height: 680px;
-            background-image: url('fundo.png'); /* Sua imagem ajustada com escala 0-50 */
+            background-image: url('fundo.png'); /* Sua imagem base */
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
@@ -189,73 +189,124 @@
             margin: 0 -1px;
         }
 
-        /* --- CONTROLES SOBREPOSTOS (BOTÕES DO PNG) --- */
-        .btn-control-overlay {
+        /* --- OVERLAY 6: CONTROLES ESTILIZADOS SOBREPOSTOS --- */
+        .controls-wrapper {
             position: absolute;
-            top: 541px;
-            left: 30px;
-            width: 320px;
-            height: 44px;
-            background: transparent;
-            border: none;
+            top: 538px;
+            left: 25px;
+            width: 330px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .btn-row {
+            display: flex;
+            width: 100%;
+            gap: 10px;
+        }
+
+        /* Botão INICIAR / PAUSAR */
+        .btn-control-overlay {
+            flex: 1;
+            height: 46px;
+            background: linear-gradient(180deg, #2e7d32 0%, #1b5e20 100%);
+            border: 1px solid #4caf50;
+            border-radius: 23px;
             cursor: pointer;
-            z-index: 5;
             font-family: 'Orbitron', sans-serif;
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: 900;
             letter-spacing: 2px;
             color: #ffffff;
             display: flex;
             align-items: center;
             justify-content: center;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+            box-shadow: 0 4px 15px rgba(46, 125, 50, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+            transition: all 0.2s ease;
         }
 
+        .btn-control-overlay:hover {
+            background: linear-gradient(180deg, #388e3c 0%, #2e7d32 100%);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+        }
+
+        .btn-control-overlay:active {
+            transform: scale(0.98);
+        }
+
+        /* Estado quando está em PAUSA */
+        .btn-control-overlay.paused {
+            background: linear-gradient(180deg, #f57c00 0%, #e65100 100%);
+            border-color: #ff9800;
+            box-shadow: 0 4px 15px rgba(245, 124, 0, 0.4);
+        }
+
+        /* Botão PARAR */
         .btn-stop-overlay {
-            position: absolute;
-            top: 541px;
-            left: 270px;
-            width: 80px;
-            height: 44px;
-            background: linear-gradient(180deg, #ff1744 0%, #b2102f 100%);
-            border: none;
-            border-radius: 22px;
+            width: 90px;
+            height: 46px;
+            background: linear-gradient(180deg, #d32f2f 0%, #b71c1c 100%);
+            border: 1px solid #ef5350;
+            border-radius: 23px;
             color: white;
             font-family: 'Orbitron', sans-serif;
             font-size: 0.8rem;
             font-weight: 900;
             cursor: pointer;
-            z-index: 6;
-            box-shadow: 0 4px 15px rgba(255, 23, 68, 0.4);
+            box-shadow: 0 4px 15px rgba(211, 47, 47, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+            transition: all 0.2s ease;
         }
 
+        .btn-stop-overlay:hover {
+            background: linear-gradient(180deg, #e53935 0%, #c62828 100%);
+            box-shadow: 0 6px 20px rgba(239, 83, 80, 0.6);
+        }
+
+        /* Botão EXPORTAR ROTAS */
         .btn-export-overlay {
-            position: absolute;
-            top: 597px;
-            left: 30px;
-            width: 320px;
-            height: 32px;
-            background: transparent;
-            border: none;
-            color: #4db3c2;
+            width: 100%;
+            height: 38px;
+            background: linear-gradient(180deg, #102a38 0%, #071722 100%);
+            border: 1px solid #1c4e68;
+            border-radius: 19px;
+            color: #00d8ff;
             font-family: 'Share Tech Mono', monospace;
-            font-size: 0.75rem;
+            font-size: 0.8rem;
+            font-weight: bold;
+            letter-spacing: 1px;
             cursor: pointer;
-            z-index: 5;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(0, 216, 255, 0.2);
+            transition: all 0.2s ease;
         }
 
+        .btn-export-overlay:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            border-color: #2a3b47;
+            color: #526c7d;
+            box-shadow: none;
+        }
+
+        .btn-export-overlay:not(:disabled):hover {
+            background: linear-gradient(180deg, #163a4e 0%, #0c2333 100%);
+            border-color: #00d8ff;
+            box-shadow: 0 0 12px rgba(0, 216, 255, 0.3);
+        }
+
+        /* Status da Rota */
         .route-status-overlay {
-            position: absolute;
-            top: 636px;
-            left: 30px;
-            width: 320px;
             text-align: center;
-            font-size: 0.65rem;
+            font-size: 0.7rem;
             font-family: 'Share Tech Mono', monospace;
             color: #00e676;
+            margin-top: -2px;
         }
 
         .route-status-overlay.warn { color: #ffb300; }
@@ -369,13 +420,16 @@
             <span class="digit digit-red">0</span>
         </div>
 
-        <!-- OVERLAY 6: CONTROLES DE BOTÃO -->
-        <button id="btn-toggle" class="btn-control-overlay">► INICIAR</button>
-        <button id="btn-stop" class="btn-stop-overlay" style="display: none;">PARAR</button>
-        
-        <!-- EXPORTAÇÃO E STATUS -->
-        <button id="btn-export" class="btn-export-overlay">☁ EXPORTAR ROTAS</button>
-        <div id="route-status" class="route-status-overlay"></div>
+        <!-- OVERLAY 6: CONTROLES ESTILIZADOS SOBREPOSTOS -->
+        <div class="controls-wrapper">
+            <div class="btn-row">
+                <button id="btn-toggle" class="btn-control-overlay">► INICIAR</button>
+                <button id="btn-stop" class="btn-stop-overlay" style="display: none;">PARAR</button>
+            </div>
+            
+            <button id="btn-export" class="btn-export-overlay">☁ EXPORTAR ROTAS</button>
+            <div id="route-status" class="route-status-overlay"></div>
+        </div>
 
     </div>
 
@@ -432,7 +486,7 @@
         const MIN_GAUGE_SPEED = 20;
         const MAX_GAUGE_SPEED = 200;
 
-        // --- INTEGRATÇÃO COM GOOGLE APPS SCRIPT ---
+        // --- INTEGRAÇÃO COM GOOGLE APPS SCRIPT ---
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw4STNR77PoKLSbCaqGuCDgmK5CwGn-7ZRoLpkiRqxrfz4ARGfneUr4XNCnrQKMaDjIBw/exec";
         const MAX_LOCAL_ROUTES = 10;
         const ROUTES_STORAGE_KEY = 'ebike_routes';
@@ -882,6 +936,7 @@
                 isRunning = true;
                 isPaused = false;
                 btnToggle.innerText = '❚❚ PAUSAR';
+                btnToggle.classList.remove('paused');
                 btnStop.style.display = 'block';
                 requestWakeLock();
                 startGPS();
@@ -890,6 +945,7 @@
                 isPaused = true;
                 routePauseStartedAt = Date.now();
                 btnToggle.innerText = '▶ CONTINUAR';
+                btnToggle.classList.add('paused');
                 requestWakeLock();
                 bellElement.classList.remove('bell-alarm');
                 updateSpeed(0);
@@ -900,6 +956,7 @@
                 }
                 isPaused = false;
                 btnToggle.innerText = '❚❚ PAUSAR';
+                btnToggle.classList.remove('paused');
                 requestWakeLock();
             }
         });
@@ -919,6 +976,7 @@
                 maxSpeedDisplay.innerText = '0.0';
 
                 btnToggle.innerText = '► INICIAR';
+                btnToggle.classList.remove('paused');
                 btnStop.style.display = 'none';
 
                 releaseWakeLock();
