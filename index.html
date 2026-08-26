@@ -1,0 +1,1692 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Velocímetro E-Bike Pro - GPS + Rotas v4</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: #0d0f12;
+            background-image: 
+                radial-gradient(circle at 50% 50%, #1a1e24 0%, #08090b 100%),
+                linear-gradient(45deg, rgba(0,0,0,0.1) 25%, transparent 25%, transparent 75%, rgba(0,0,0,0.1) 75%, rgba(0,0,0,0.1)),
+                linear-gradient(45deg, rgba(0,0,0,0.1) 25%, transparent 25%, transparent 75%, rgba(0,0,0,0.1) 75%, rgba(0,0,0,0.1));
+            background-size: 100% 100%, 8px 8px, 8px 8px;
+            background-position: 0 0, 0 0, 4px 4px;
+            color: #fff;
+            font-family: 'Share Tech Mono', monospace;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 8px 10px 14px;
+        }
+
+        /* --- PAINEL PRINCIPAL --- */
+        .dashboard {
+            width: 100%;
+            max-width: 420px;
+            background: linear-gradient(145deg, #181b20, #0f1115);
+            border-radius: 26px;
+            padding: 14px 14px 16px;
+            box-shadow: 
+                0 20px 40px rgba(0,0,0,0.8),
+                inset 0 2px 2px rgba(255,255,255,0.1),
+                inset 0 -2px 5px rgba(0,0,0,0.8);
+            border: 3px solid #282c34;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        /* Título e Configuração */
+        .header-bar {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0;
+        }
+
+        .header-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            color: #6c7a89;
+            text-transform: uppercase;
+        }
+
+        .btn-settings {
+            background: none;
+            border: none;
+            color: #8a9ba8;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .btn-settings:hover {
+            color: #00f2ff;
+        }
+
+        /* GAUGES (SVG MOSTRADOR) */
+        .gauge-container {
+            position: relative;
+            width: 320px;
+            height: 305px;
+        }
+
+        svg.gauge {
+            width: 100%;
+            height: 100%;
+        }
+
+        .gauge-bg {
+            fill: none;
+            stroke: #15181c;
+            stroke-width: 18;
+        }
+
+        .gauge-track {
+            fill: none;
+            stroke: url(#speed-gradient);
+            stroke-width: 12;
+            stroke-linecap: round;
+        }
+
+        /* Números da escala analógica */
+        .scale-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 28px;
+            font-weight: 900;
+            fill: #e0e6ed;
+            text-anchor: middle;
+            dominant-baseline: central;
+        }
+
+        .scale-tick-main {
+            stroke: #8a9ba8;
+            stroke-width: 3;
+        }
+
+        .scale-tick-sub {
+            stroke: #3a424e;
+            stroke-width: 2;
+        }
+
+        /* Ponteiro */
+        .needle {
+            stroke: #ff3b30;
+            stroke-width: 4;
+            stroke-linecap: round;
+            transition: transform 0.2s cubic-bezier(0.1, 0.6, 0.2, 1);
+            transform-origin: 160px 150px;
+            filter: drop-shadow(0px 0px 5px rgba(255, 59, 48, 0.8));
+        }
+
+        .needle-cap {
+            fill: #2c3038;
+            stroke: #ff3b30;
+            stroke-width: 2;
+        }
+
+        /* VELOCIDADE DIGITAL CENTRAL */
+        .speed-readout {
+            position: absolute;
+            top: 51%;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+        }
+
+        .speed-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3.25rem;
+            font-weight: 900;
+            color: #00f2ff;
+            text-shadow: 0 0 15px rgba(0, 242, 255, 0.5);
+            line-height: 1;
+        }
+
+        .speed-unit {
+            font-size: 0.85rem;
+            color: #8a9ba8;
+            letter-spacing: 1px;
+            margin-top: 0;
+        }
+
+        /* Sino do Alerta no SVG */
+        .bell-icon {
+            font-size: 28px;
+            transition: all 0.3s;
+        }
+
+        .bell-alarm {
+            animation: pulse-bell 0.4s infinite alternate;
+        }
+
+        @keyframes pulse-bell {
+            from { transform: scale(1); filter: drop-shadow(0 0 2px red); }
+            to { transform: scale(1.5); filter: drop-shadow(0 0 12px red); }
+        }
+
+        /* --- PAINÉIS SECUNDÁRIOS --- */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            width: 100%;
+            margin-top: 2px;
+        }
+
+        .stat-card {
+            background: rgba(10, 12, 15, 0.6);
+            border: 1px solid #222730;
+            border-radius: 12px;
+            padding: 8px 10px;
+            text-align: center;
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.5);
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: #6c7a89;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            color: #e0e6ed;
+        }
+
+        /* --- ODÔMETRO (TOTAL E TRIP) --- */
+        .odometer-box {
+            width: 100%;
+            background: #08090a;
+            border: 2px solid #1a1d24;
+            border-radius: 10px;
+            padding: 10px 15px;
+            margin-top: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .odo-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .odo-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .odo-label {
+            font-size: 0.65rem;
+            color: #52606d;
+        }
+
+        .btn-reset-trip {
+            background: none;
+            border: none;
+            color: #6c7a89;
+            font-size: 0.75rem;
+            cursor: pointer;
+            padding: 0 2px;
+            transition: color 0.2s;
+        }
+
+        .btn-reset-trip:hover {
+            color: #ff3b30;
+        }
+
+        .odo-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.05rem;
+            color: #39ff14;
+            text-shadow: 0 0 8px rgba(57, 255, 20, 0.3);
+        }
+
+        /* --- BOTÕES DE CONTROLE --- */
+        .controls {
+            margin-top: 10px;
+            width: 100%;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .btn-control {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 700;
+            padding: 12px 18px;
+            border-radius: 50px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            letter-spacing: 1px;
+            color: white;
+            flex: 1;
+        }
+
+        .btn-start {
+            background: linear-gradient(145deg, #28a745, #1e7e34);
+            box-shadow: 0 6px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-pause {
+            background: linear-gradient(145deg, #ff9800, #e65100);
+            box-shadow: 0 6px 15px rgba(255, 152, 0, 0.4);
+        }
+
+        .btn-stop {
+            background: linear-gradient(145deg, #dc3545, #bd2130);
+            box-shadow: 0 6px 15px rgba(220, 53, 69, 0.4);
+        }
+
+        .btn-control:active {
+            transform: scale(0.96);
+        }
+
+        /* --- MODAL DE CONFIGURAÇÕES --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .modal {
+            background: #181b20;
+            border: 2px solid #282c34;
+            border-radius: 15px;
+            padding: 20px;
+            width: 90%;
+            max-width: 350px;
+        }
+
+        .modal h3 {
+            font-family: 'Orbitron', sans-serif;
+            color: #00f2ff;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .modal label {
+            font-size: 0.8rem;
+            color: #8a9ba8;
+            display: block;
+            margin-top: 10px;
+        }
+
+        .modal input {
+            width: 100%;
+            background: #0d0f12;
+            border: 1px solid #3a424e;
+            color: #fff;
+            padding: 8px;
+            border-radius: 5px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1rem;
+            margin-top: 4px;
+        }
+
+        .modal-btn {
+            margin-top: 20px;
+            width: 100%;
+            background: #00f2ff;
+            color: #000;
+            font-weight: bold;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    
+        /* --- ODÔMETRO MECÂNICO --- */
+        .mechanical-odo {
+            width: 100%;
+            margin-top: 8px;
+            padding: 8px 10px;
+            background: linear-gradient(180deg, #252a31, #0b0d10);
+            border: 2px solid #343a43;
+            border-radius: 10px;
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.08),
+                        inset 0 -3px 6px rgba(0,0,0,0.9),
+                        0 4px 10px rgba(0,0,0,0.45);
+        }
+
+        .mechanical-odo-title {
+            font-size: 0.62rem;
+            color: #6c7a89;
+            letter-spacing: 1.5px;
+            margin-bottom: 6px;
+        }
+
+        .odo-window {
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            background: #08090a;
+            border: 2px solid #111419;
+            border-radius: 4px;
+            padding: 4px;
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.9);
+        }
+
+        .odo-digit {
+            position: relative;
+            width: 31px;
+            height: 38px;
+            margin: 0 1px;
+            overflow: hidden;
+            background: linear-gradient(90deg, #b7bcc2 0%, #f3f5f7 18%, #d4d8dc 50%, #969ba1 100%);
+            border: 1px solid #555b62;
+            border-radius: 2px;
+            color: #111;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.05rem;
+            font-weight: 900;
+            text-align: center;
+            line-height: 38px;
+            box-shadow: inset 0 1px 1px rgba(255,255,255,0.8);
+        }
+
+        .odo-digit::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            border-top: 1px solid rgba(0,0,0,0.8);
+            pointer-events: none;
+        }
+
+        .odo-decimal {
+            width: 8px;
+            background: transparent;
+            border: none;
+            color: #8a9ba8;
+            font-size: 1rem;
+            line-height: 38px;
+            box-shadow: none;
+        }
+
+        .odo-decimal::after { display: none; }
+        /* TRIP mecânico dentro do mostrador */
+        .gauge-trip-mechanical {
+            margin-top: 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            padding: 5px 9px 4px;
+            background: rgba(4, 6, 8, 0.78);
+            border: 1px solid #242a31;
+            border-radius: 7px;
+            box-shadow: inset 0 0 7px rgba(0,0,0,0.85);
+            white-space: nowrap;
+        }
+
+        .gauge-trip-label {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.56rem;
+            color: #6c7a89;
+            letter-spacing: 1.4px;
+            line-height: 1;
+        }
+
+        .trip-odo-window {
+            display: flex;
+            align-items: stretch;
+            justify-content: center;
+            background: #08090a;
+            border: 1px solid #14171b;
+            border-radius: 3px;
+            padding: 2px;
+            box-shadow: inset 0 0 6px rgba(0,0,0,0.95);
+        }
+
+        .trip-odo-digit {
+            position: relative;
+            width: 25px;
+            height: 30px;
+            margin: 0 1px;
+            overflow: hidden;
+            background: linear-gradient(
+                90deg,
+                #b7bcc2 0%,
+                #f3f5f7 18%,
+                #d4d8dc 50%,
+                #969ba1 100%
+            );
+            border: 1px solid #555b62;
+            border-radius: 2px;
+            color: #111;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.85rem;
+            font-weight: 900;
+            text-align: center;
+            line-height: 30px;
+            box-shadow: inset 0 1px 1px rgba(255,255,255,0.8);
+        }
+
+        .trip-odo-digit::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            border-top: 1px solid rgba(0,0,0,0.8);
+            pointer-events: none;
+        }
+
+        .trip-odo-decimal {
+            width: 6px;
+            color: #8a9ba8;
+            font-size: 0.85rem;
+            line-height: 30px;
+            text-align: center;
+        }
+
+        .trip-odo-last {
+            color: #d71920;
+            background: linear-gradient(
+                90deg,
+                #e7e9eb 0%,
+                #ffffff 18%,
+                #d8dcdf 50%,
+                #a8adb2 100%
+            );
+        }
+
+        .trip-reset-row {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin-top: 1px;
+        }
+
+        .btn-reset-trip-gauge {
+            font-size: 0.64rem;
+            color: #687581;
+            opacity: 0.78;
+            padding: 1px 7px;
+            border-radius: 10px;
+        }
+
+        .btn-reset-trip-gauge:hover {
+            opacity: 1;
+            color: #ff3b30;
+        }
+
+
+
+        /* Casa decimal em vermelho */
+        .odo-decimal-red {
+            color: #ff3b30 !important;
+            text-shadow: 0 0 5px rgba(255,59,48,0.35);
+        }
+
+        /* Último dígito do odômetro TOTAL = décimo de km */
+        .odo-window .odo-digit:last-child {
+            color: #d71920;
+            background: linear-gradient(
+                90deg,
+                #e7e9eb 0%,
+                #ffffff 18%,
+                #d8dcdf 50%,
+                #a8adb2 100%
+            );
+        }
+
+    
+        /* --- EXPORTAÇÃO / ROTAS OFFLINE --- */
+        .export-area {
+            width: 100%;
+            margin-top: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .btn-export {
+            width: 100%;
+            border: 1px solid #2a5960;
+            border-radius: 10px;
+            background: linear-gradient(145deg, #17353a, #10272b);
+            color: #8ff7ff;
+            padding: 10px 12px;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .btn-export:disabled {
+            opacity: 0.45;
+            cursor: default;
+        }
+
+        .route-status {
+            min-height: 16px;
+            text-align: center;
+            font-size: 0.65rem;
+            color: #6c7a89;
+        }
+
+        .route-status.ok { color: #39ff14; }
+        .route-status.warn { color: #ffb703; }
+        .route-status.error { color: #ff5a52; }
+
+        /* --- LAYOUT COMPACTO PARA CELULAR --- */
+        @media (max-width: 480px) {
+            .dashboard {
+                width: 100%;
+                max-width: 400px;
+            }
+
+            .gauge-container {
+                width: min(320px, 100%);
+            }
+
+            .header-title {
+                font-size: 0.78rem;
+            }
+
+            .stat-card {
+                min-height: 62px;
+            }
+
+            .mechanical-odo {
+                margin-top: 7px;
+            }
+
+            .controls {
+                margin-top: 9px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- PAINEL DO VELOCÍMETRO -->
+    <div class="dashboard">
+        <div class="header-bar">
+            <div class="header-title">E-Bike GPS <span id="gauge-max-label">0–50</span></div>
+            <button class="btn-settings" id="open-settings" title="Ajustes de Odômetro e Limite">⚙️</button>
+        </div>
+
+        <!-- MOSTRADOR ANALÓGICO / DIGITAL -->
+        <div class="gauge-container">
+            <svg class="gauge" viewBox="0 0 320 300">
+                <defs>
+                    <linearGradient id="speed-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%"   stop-color="#00f2ff" />
+                        <stop offset="45%"  stop-color="#39ff14" />
+                        <stop offset="70%"  stop-color="#b8ff00" />
+                        <stop offset="82%"  stop-color="#ffb703" />
+                        <stop offset="92%"  stop-color="#ff6b00" />
+                        <stop offset="100%" stop-color="#ff0055" />
+                    </linearGradient>
+                </defs>
+
+                <!-- Trilho de Fundo -->
+                <path class="gauge-bg" d="M 55,225 A 120,120 0 1,1 265,225" />
+                <!-- Arco Colorido -->
+                <path class="gauge-track" d="M 55,225 A 120,120 0 1,1 265,225" />
+
+                <!-- MARCAÇÕES DOS TRAÇOS -->
+                <line x1="55" y1="225" x2="67" y2="220" class="scale-tick-main" />
+                <line x1="160" y1="30" x2="160" y2="43" class="scale-tick-main" />
+                <line x1="265" y1="225" x2="253" y2="220" class="scale-tick-main" />
+
+                <line x1="68" y1="180" x2="78" y2="178" class="scale-tick-sub" />
+                <line x1="94" y1="138" x2="103" y2="140" class="scale-tick-sub" />
+                <line x1="226" y1="138" x2="217" y2="140" class="scale-tick-sub" />
+                <line x1="252" y1="180" x2="242" y2="178" class="scale-tick-sub" />
+
+                <!-- ESCALA NUMÉRICA -->
+                <text id="scale-0" x="42" y="240" class="scale-text">0</text>
+                <text id="scale-1" x="35" y="145" class="scale-text">10</text>
+                <text id="scale-2" x="88" y="68"  class="scale-text">20</text>
+                <text id="scale-3" x="232" y="68" class="scale-text">30</text>
+                <text id="scale-4" x="285" y="145" class="scale-text">40</text>
+                <text id="scale-5" x="278" y="240" class="scale-text">50</text>
+
+                <!-- ÍCONE DO ALARME / SINO -->
+                <g id="bell-group" transform="translate(160, 50)">
+                    <text class="bell-icon" id="bell-element" x="0" y="0" text-anchor="middle">🔔</text>
+                </g>
+
+                <!-- Ponteiro Vermelho -->
+                <line id="needle" class="needle" x1="160" y1="150" x2="70" y2="200" />
+                <circle class="needle-cap" cx="160" cy="150" r="10" />
+            </svg>
+
+            <!-- Velocidade Numérica Central -->
+            <div class="speed-readout">
+                <div id="speed-display" class="speed-value">0</div>
+                <div class="speed-unit">KM/H</div>
+
+                <!-- TRIP mecânico dentro do mostrador -->
+                <div class="gauge-trip gauge-trip-mechanical">
+                    <div class="gauge-trip-label">TRIP</div>
+
+                    <div class="trip-odo-window" id="trip-odo-window">
+                        <span class="trip-odo-digit">0</span>
+                        <span class="trip-odo-digit">0</span>
+                        <span class="trip-odo-digit">0</span>
+                        <span class="trip-odo-decimal">.</span>
+                        <span class="trip-odo-digit trip-odo-last">0</span>
+                    </div>
+
+                    <div class="trip-reset-row">
+                        <button class="btn-reset-trip btn-reset-trip-gauge"
+                                id="btn-reset-trip"
+                                title="Zerar TRIP">↻</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ESTATÍSTICAS SECUNDÁRIAS -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Média</div>
+                <div class="stat-value"><span id="avg-speed">0.0</span> <small style="font-size:0.6rem">km/h</small></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Máxima</div>
+                <div class="stat-value"><span id="max-speed">0.0</span> <small style="font-size:0.6rem">km/h</small></div>
+            </div>
+        </div>
+
+        <!-- ODÔMETRO MECÂNICO TOTAL -->
+        <div class="mechanical-odo">
+            <div class="mechanical-odo-title">KM TOTAL <span id="total-odo" style="display:none"></span></div>
+            <div class="odo-window" id="odo-window">
+                <span class="odo-digit">0</span>
+                <span class="odo-digit">0</span>
+                <span class="odo-digit">0</span>
+                <span class="odo-digit">0</span>
+                <span class="odo-digit">0</span>
+                <span class="odo-digit">0</span>
+                <span class="odo-decimal">.</span>
+                <span class="odo-digit">0</span>
+            </div>
+
+        </div>
+
+
+        <!-- CONTROLES INICIAR / PAUSAR / PARAR -->
+        <div class="controls">
+            <button id="btn-toggle" class="btn-control btn-start">▶ INICIAR</button>
+            <button id="btn-stop" class="btn-control btn-stop" style="display: none;">⏹ PARAR</button>
+        </div>
+
+        <div class="export-area">
+            <button id="btn-export" class="btn-export">☁ EXPORTAR ROTAS</button>
+            <div id="route-status" class="route-status"></div>
+        </div>
+    </div>
+
+    <!-- MODAL DE CONFIGURAÇÕES -->
+    <div class="modal-overlay" id="modal-settings">
+        <div class="modal">
+            <h3>⚙️ Configurações</h3>
+            <label for="input-odo">Odômetro Total Real (km):</label>
+            <input type="number" id="input-odo" step="0.1" value="0.0">
+
+            <label for="input-gauge-max">Máximo do Velocímetro (km/h):</label>
+            <input type="number" id="input-gauge-max" min="20" max="200" step="5" value="50">
+
+            <label for="input-limit">Limite de Vel. p/ Alerta (km/h):</label>
+            <input type="number" id="input-limit" value="24">
+
+            <label for="input-volume">Volume do Alerta (%):</label>
+            <input type="range" id="input-volume" min="0" max="100" step="1" value="15">
+            <div style="text-align:right;color:#8a9ba8;font-size:0.75rem;margin-top:3px;">
+                <span id="volume-display">15%</span>
+            </div>
+
+            <button class="modal-btn" id="save-settings">Salvar</button>
+        </div>
+    </div>
+
+    <script>
+        // --- PERSISTÊNCIA DOS DADOS (LOCALSTORAGE) ---
+        let totalOdometer = parseFloat(localStorage.getItem('ebike_total_odo')) || 0.0;
+        let tripOdometer = parseFloat(localStorage.getItem('ebike_trip_odo')) || 0.0;
+        let speedLimit = parseFloat(localStorage.getItem('ebike_speed_limit')) || 24;
+        let alarmVolume = parseFloat(localStorage.getItem('ebike_alarm_volume'));
+        if (isNaN(alarmVolume)) alarmVolume = 0.15;
+
+        let isRunning = false;
+        let isPaused = false;
+        let currentSpeed = 0;
+        let currentMaxSpeed = 0;
+        
+        let totalTimeSeconds = 0;
+        let totalSpeedAccumulator = 0;
+        let samplesCount = 0;
+
+        let lastPosition = null;
+        let watchId = null;
+        let wakeLock = null;
+        let audioCtx = null;
+        let alarmInterval = null;
+
+        // --- ROTAS LOCAIS / EXPORTAÇÃO ---
+       	const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw4STNR77PoKLSbCaqGuCDgmK5CwGn-7ZRoLpkiRqxrfz4ARGfneUr4XNCnrQKMaDjIBw/exec";
+        const MAX_LOCAL_ROUTES = 10;
+        const ROUTES_STORAGE_KEY = 'ebike_routes';
+        const CURRENT_ROUTE_KEY = 'ebike_current_route';
+
+        let savedRoutes = loadSavedRoutes();
+        let currentRoute = null;
+        let routeStartTimestamp = null;
+        let routePauseStartedAt = null;
+        let routePausedMs = 0;
+        let lastSavedRoutePoint = null;
+
+        function loadSavedRoutes() {
+            try {
+                const data = JSON.parse(localStorage.getItem(ROUTES_STORAGE_KEY) || '[]');
+                return Array.isArray(data) ? data : [];
+            } catch (e) {
+                console.log('Erro ao carregar rotas:', e);
+                return [];
+            }
+        }
+
+        function persistRoutes() {
+            localStorage.setItem(ROUTES_STORAGE_KEY, JSON.stringify(savedRoutes));
+            updateRouteStatus();
+        }
+
+        function persistCurrentRoute() {
+            if (currentRoute) {
+                localStorage.setItem(CURRENT_ROUTE_KEY, JSON.stringify(currentRoute));
+            } else {
+                localStorage.removeItem(CURRENT_ROUTE_KEY);
+            }
+        }
+
+        function trimExportedRoutesIfNeeded() {
+            // Nunca remove rota pendente. Remove somente rotas já exportadas,
+            // começando pela mais antiga.
+            while (savedRoutes.length >= MAX_LOCAL_ROUTES) {
+                const index = savedRoutes.findIndex(r => r.exportado === true);
+                if (index === -1) return false;
+                savedRoutes.splice(index, 1);
+            }
+            persistRoutes();
+            return true;
+        }
+
+        function canStartNewRoute() {
+            if (savedRoutes.length < MAX_LOCAL_ROUTES) return true;
+            return savedRoutes.some(r => r.exportado === true);
+        }
+
+        function formatTime(date) {
+            return date.toLocaleTimeString('pt-BR', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+
+        function formatDate(date) {
+            return date.toLocaleDateString('pt-BR');
+        }
+
+        function formatDuration(ms) {
+            const total = Math.max(0, Math.floor(ms / 1000));
+            const h = Math.floor(total / 3600);
+            const m = Math.floor((total % 3600) / 60);
+            const s = total % 60;
+            return [h, m, s].map(v => String(v).padStart(2, '0')).join(':');
+        }
+
+        function beginRouteRecording() {
+            if (!trimExportedRoutesIfNeeded()) {
+                alert("Há 10 rotas não exportadas. Exporte pelo menos uma antes de iniciar uma nova pedalada.");
+                return false;
+            }
+
+            const now = new Date();
+            routeStartTimestamp = now.getTime();
+            routePauseStartedAt = null;
+            routePausedMs = 0;
+            lastSavedRoutePoint = null;
+
+            currentRoute = {
+                id: String(routeStartTimestamp),
+                data: formatDate(now),
+                inicio: formatTime(now),
+                fim: '',
+                duracao: '',
+                distancia: 0,
+                media: 0,
+                maxima: 0,
+                exportado: false,
+                rota: []
+            };
+
+            persistCurrentRoute();
+            updateRouteStatus('GRAVANDO ROTA • aguardando pontos GPS...', 'warn');
+            return true;
+        }
+
+        function shouldSaveRoutePoint(lat, lon, timestamp) {
+            if (!lastSavedRoutePoint) return true;
+
+            const elapsed = timestamp - lastSavedRoutePoint.timestamp;
+            const distKm = calculateDistance(
+                lastSavedRoutePoint.lat,
+                lastSavedRoutePoint.lon,
+                lat,
+                lon
+            );
+
+            // Mantém a rota leve: salva a cada 5 segundos OU a cada 5 metros.
+            return elapsed >= 5000 || distKm >= 0.005;
+        }
+
+        function recordRoutePoint(position, speedKmh) {
+            if (!currentRoute || !isRunning || isPaused) return;
+
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            const timestamp = position.timestamp || Date.now();
+
+            if (!shouldSaveRoutePoint(lat, lon, timestamp)) return;
+
+            const point = {
+                lat: Number(lat.toFixed(6)),
+                lon: Number(lon.toFixed(6)),
+                t: new Date(timestamp).toISOString(),
+                accuracy: position.coords.accuracy != null
+                    ? Math.round(position.coords.accuracy)
+                    : null,
+                speed: Number((speedKmh || 0).toFixed(1))
+            };
+
+            if (position.coords.altitude != null) {
+                point.alt = Number(position.coords.altitude.toFixed(1));
+            }
+
+            currentRoute.rota.push(point);
+            lastSavedRoutePoint = { lat, lon, timestamp };
+            persistCurrentRoute();
+
+            updateRouteStatus(
+                `GRAVANDO ROTA • ${currentRoute.rota.length} ponto(s) GPS`,
+                'warn'
+            );
+        }
+
+        function finalizeCurrentRoute() {
+            if (!currentRoute || routeStartTimestamp === null) return;
+
+            const now = new Date();
+            let pausedMs = routePausedMs;
+
+            if (routePauseStartedAt !== null) {
+                pausedMs += Date.now() - routePauseStartedAt;
+            }
+
+            const activeMs = Date.now() - routeStartTimestamp - pausedMs;
+
+            currentRoute.fim = formatTime(now);
+            currentRoute.duracao = formatDuration(activeMs);
+            currentRoute.distancia = Number((currentRoute.distancia || 0).toFixed(2));
+            currentRoute.media = samplesCount > 0
+                ? Number((totalSpeedAccumulator / samplesCount).toFixed(1))
+                : 0;
+            currentRoute.maxima = Number(currentMaxSpeed.toFixed(1));
+            currentRoute.exportado = false;
+
+            savedRoutes.push(currentRoute);
+            persistRoutes();
+
+            currentRoute = null;
+            routeStartTimestamp = null;
+            routePauseStartedAt = null;
+            routePausedMs = 0;
+            lastSavedRoutePoint = null;
+            persistCurrentRoute();
+
+            updateRouteStatus(
+                `Rota salva localmente • ${savedRoutes.length}/10`,
+                'ok'
+            );
+        }
+
+        function updateRouteStatus(message = '', type = '') {
+            const status = document.getElementById('route-status');
+            const exportBtn = document.getElementById('btn-export');
+            if (!status || !exportBtn) return;
+
+            const pending = savedRoutes.filter(r => !r.exportado).length;
+
+            exportBtn.disabled = pending === 0;
+            exportBtn.innerText = pending > 0
+                ? `☁ EXPORTAR ROTAS (${pending})`
+                : '☁ NENHUMA ROTA PENDENTE';
+
+            status.className = 'route-status' + (type ? ' ' + type : '');
+
+            if (message) {
+                status.innerText = message;
+            } else {
+                status.innerText =
+                    `${savedRoutes.length}/10 rotas locais • ${pending} pendente(s)`;
+            }
+        }
+
+        function routeDiagnostics() {
+            console.table(savedRoutes.map((r, i) => ({
+                indice: i,
+                data: r.data,
+                inicio: r.inicio,
+                fim: r.fim,
+                distancia: r.distancia,
+                pontosGPS: Array.isArray(r.rota) ? r.rota.length : 0,
+                exportado: r.exportado
+            })));
+
+            console.log('Rota ativa:', currentRoute);
+            console.log('ebike_routes:', localStorage.getItem(ROUTES_STORAGE_KEY));
+            console.log('ebike_current_route:', localStorage.getItem(CURRENT_ROUTE_KEY));
+        }
+
+        function verifyRouteSavedViaJsonp(routeId, timeoutMs = 8000) {
+            return new Promise((resolve, reject) => {
+                const callbackName =
+                    '__ebikeRouteCheck_' +
+                    Date.now() +
+                    '_' +
+                    Math.floor(Math.random() * 100000);
+
+                const script =
+                    document.createElement('script');
+
+                let finished = false;
+
+                const cleanup = () => {
+                    if (finished) return;
+                    finished = true;
+
+                    try {
+                        delete window[callbackName];
+                    } catch (_) {
+                        window[callbackName] =
+                            undefined;
+                    }
+
+                    if (script.parentNode) {
+                        script.parentNode
+                            .removeChild(script);
+                    }
+                };
+
+                const timer =
+                    setTimeout(() => {
+                        cleanup();
+
+                        reject(
+                            new Error(
+                                'Tempo esgotado ao confirmar no Google.'
+                            )
+                        );
+                    }, timeoutMs);
+
+                window[callbackName] =
+                    (result) => {
+                        clearTimeout(timer);
+
+                        const found =
+                            result &&
+                            result.ok === true &&
+                            result.encontrado === true;
+
+                        cleanup();
+
+                        if (found) {
+                            resolve(true);
+                        } else {
+                            reject(
+                                new Error(
+                                    result &&
+                                    result.erro
+                                        ? result.erro
+                                        : 'O Google ainda não confirmou esta rota.'
+                                )
+                            );
+                        }
+                    };
+
+                script.onerror = () => {
+                    clearTimeout(timer);
+                    cleanup();
+
+                    reject(
+                        new Error(
+                            'Não foi possível consultar a confirmação.'
+                        )
+                    );
+                };
+
+                script.src =
+                    GOOGLE_SCRIPT_URL +
+                    '?action=status' +
+                    '&id=' +
+                    encodeURIComponent(routeId) +
+                    '&callback=' +
+                    encodeURIComponent(callbackName) +
+                    '&_=' +
+                    Date.now();
+
+                document.head.appendChild(script);
+            });
+        }
+
+
+        async function waitForGoogleConfirmation(routeId) {
+            let lastError = null;
+
+            // Dá tempo para o Apps Script receber o formulário e gravar a linha.
+            await new Promise(resolve =>
+                setTimeout(resolve, 1500)
+            );
+
+            for (
+                let attempt = 1;
+                attempt <= 8;
+                attempt++
+            ) {
+                try {
+                    await verifyRouteSavedViaJsonp(
+                        routeId
+                    );
+
+                    return true;
+
+                } catch (error) {
+                    lastError = error;
+
+                    console.log(
+                        `Confirmação Google ${attempt}/8:`,
+                        error.message
+                    );
+
+                    if (attempt < 8) {
+                        await new Promise(resolve =>
+                            setTimeout(
+                                resolve,
+                                1200
+                            )
+                        );
+                    }
+                }
+            }
+
+            throw lastError ||
+                new Error(
+                    'O Google não confirmou a gravação.'
+                );
+        }
+
+
+        function sendRouteWithHiddenForm(route) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const payload = {
+                        id: route.id,
+                        data: route.data,
+                        inicio: route.inicio,
+                        fim: route.fim,
+                        duracao: route.duracao,
+                        distancia: route.distancia,
+                        media: route.media,
+                        maxima: route.maxima,
+                        rota: route.rota
+                    };
+
+                    const form =
+                        document.createElement('form');
+
+                    form.method = 'POST';
+                    form.action =
+                        GOOGLE_SCRIPT_URL;
+                    form.target =
+                        'ebike-google-post';
+
+                    form.style.display =
+                        'none';
+
+                    const input =
+                        document.createElement('input');
+
+                    input.type = 'hidden';
+                    input.name = 'payload';
+                    input.value =
+                        JSON.stringify(payload);
+
+                    form.appendChild(input);
+
+                    document.body
+                        .appendChild(form);
+
+                    form.submit();
+
+                    // O submit de formulário não fornece resposta legível.
+                    // Após o envio, confirmaremos por JSONP.
+                    setTimeout(() => {
+                        form.remove();
+                        resolve(true);
+                    }, 300);
+
+                } catch (error) {
+                    reject(
+                        new Error(
+                            'Falha ao preparar envio: ' +
+                            error.message
+                        )
+                    );
+                }
+            });
+        }
+
+
+        async function exportRoute(route) {
+            /*
+             * O envio é feito por FORMULÁRIO HTML oculto.
+             *
+             * Isso evita completamente a dependência
+             * do fetch/CORS entre GitHub Pages e Apps Script.
+             */
+            await sendRouteWithHiddenForm(route);
+
+            /*
+             * A rota só será considerada exportada
+             * depois que o doGet(status) confirmar
+             * que o ID existe na planilha.
+             */
+            return await waitForGoogleConfirmation(
+                route.id
+            );
+        }
+
+
+        async function exportPendingRoutes() {
+            const pending = savedRoutes.filter(r => !r.exportado);
+
+            if (pending.length === 0) {
+                updateRouteStatus('Nenhuma rota pendente.', 'ok');
+                return;
+            }
+
+            if (!navigator.onLine) {
+                updateRouteStatus('Sem internet. As rotas continuam salvas no celular.', 'warn');
+                return;
+            }
+
+            const btn = document.getElementById('btn-export');
+            btn.disabled = true;
+
+            let exported = 0;
+
+            for (const route of pending) {
+                try {
+                    updateRouteStatus(
+                        `Enviando rota ${exported + 1} de ${pending.length}...`
+                    );
+
+                    await exportRoute(route);
+                    route.exportado = true;
+                    exported++;
+                    persistRoutes();
+
+                } catch (error) {
+                    console.log('Falha ao exportar rota:', error);
+                    persistRoutes();
+
+                    updateRouteStatus(
+                        `Falha: ${error.message} • Dados preservados.`,
+                        'error'
+                    );
+
+                    return;
+                }
+            }
+
+            updateRouteStatus(
+                `${exported} rota(s) exportada(s) com sucesso.`,
+                'ok'
+            );
+        }
+
+
+
+
+        // --- ELEMENTOS DOM ---
+        const speedDisplay = document.getElementById('speed-display');
+        const needle = document.getElementById('needle');
+        const maxSpeedDisplay = document.getElementById('max-speed');
+        const avgSpeedDisplay = document.getElementById('avg-speed');
+        const totalOdoDisplay = document.getElementById('total-odo');
+        const btnToggle = document.getElementById('btn-toggle');
+        const btnStop = document.getElementById('btn-stop');
+        const btnResetTrip = document.getElementById('btn-reset-trip');
+        const bellElement = document.getElementById('bell-element');
+
+        const modalSettings = document.getElementById('modal-settings');
+        const btnOpenSettings = document.getElementById('open-settings');
+        const btnSaveSettings = document.getElementById('save-settings');
+        const inputOdo = document.getElementById('input-odo');
+        const inputLimit = document.getElementById('input-limit');
+        const inputGaugeMax = document.getElementById('input-gauge-max');
+        const gaugeMaxLabel = document.getElementById('gauge-max-label');
+        const odoWindow = document.getElementById('odo-window');
+        const tripOdoWindow = document.getElementById('trip-odo-window');
+        const inputVolume = document.getElementById('input-volume');
+        const volumeDisplay = document.getElementById('volume-display');
+        const btnExport = document.getElementById('btn-export');
+
+        const MIN_ANGLE = -125;
+        const MAX_ANGLE = 125;
+        let gaugeMaxSpeed = parseFloat(localStorage.getItem('ebike_gauge_max_speed')) || 50;
+
+// Limites seguros para a escala configurável.
+// A escala pode ser alterada nas configurações sem precisar editar o código.
+		const MIN_GAUGE_SPEED = 20;
+		const MAX_GAUGE_SPEED = 200;
+        // --- TRIP MECÂNICO ---
+        function updateTripDisplays(value) {
+            // TRIP com 3 dígitos inteiros + 1 decimal.
+            // Ex.: 12.4 km -> 012.4
+            // Valores acima de 999.9 ficam limitados visualmente a 999.9.
+            const safeValue = Math.min(Math.max(0, value), 999.9);
+            const formatted = safeValue.toFixed(1).padStart(5, '0');
+            const digits = formatted.replace('.', '');
+            const digitElements = tripOdoWindow.querySelectorAll('.trip-odo-digit');
+
+            digitElements.forEach((el, index) => {
+                el.innerText = digits[index] || '0';
+            });
+        }
+
+
+        // --- ODÔMETRO MECÂNICO ---
+        function updateMechanicalOdometer(value) {
+            // 6 dígitos inteiros + 1 decimal.
+            // Ex.: 14857.4 km -> 014857.4
+            const formatted = Math.max(0, value).toFixed(1).padStart(8, '0');
+            const digits = formatted.replace('.', '');
+            const digitElements = odoWindow.querySelectorAll('.odo-digit');
+
+            digitElements.forEach((el, index) => {
+                el.innerText = digits[index] || '0';
+            });
+        }
+
+        // --- ESCALA NUMÉRICA DINÂMICA ---
+        function updateGaugeScaleLabels() {
+            for (let i = 0; i <= 5; i++) {
+                const label = document.getElementById(`scale-${i}`);
+                if (!label) continue;
+
+                const value = (gaugeMaxSpeed / 5) * i;
+                label.textContent = Number.isInteger(value)
+                    ? String(value)
+                    : value.toFixed(1);
+            }
+
+            gaugeMaxLabel.innerText = `0–${gaugeMaxSpeed}`;
+        }
+
+
+        // Renderiza valores salvos inicialmente
+        totalOdoDisplay.innerText = `${totalOdometer.toFixed(1)} km`;
+        updateTripDisplays(tripOdometer);
+        updateMechanicalOdometer(totalOdometer);
+        updateGaugeScaleLabels();
+        inputVolume.value = Math.round(alarmVolume * 100);
+        volumeDisplay.innerText = `${Math.round(alarmVolume * 100)}%`;
+        updateRouteStatus();
+
+        // --- WAKE LOCK (MANTER TELA ACESA) ---
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                }
+            } catch (err) {
+                console.log('Wake Lock Error:', err.message);
+            }
+        }
+
+        function releaseWakeLock() {
+            if (wakeLock !== null) {
+                wakeLock.release().then(() => { wakeLock = null; });
+            }
+        }
+
+        // --- AUDIO DE ALERTA ---
+        function playBeep() {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+                gain.gain.setValueAtTime(alarmVolume, audioCtx.currentTime);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.15);
+            } catch (e) {
+                console.log("Áudio aguardando interação.");
+            }
+        }
+
+        // --- CONTROLE CONTINUO DO TEMPO DO ALARME ---
+        function checkAlarmLoop() {
+            if (alarmInterval) clearInterval(alarmInterval);
+            
+            alarmInterval = setInterval(() => {
+                if (isRunning && !isPaused && currentSpeed >= speedLimit && currentSpeed > 0) {
+                    bellElement.classList.add('bell-alarm');
+                    playBeep();
+                } else {
+                    bellElement.classList.remove('bell-alarm');
+                }
+            }, 2500);
+        }
+
+        function updateSpeed(speed) {
+            currentSpeed = speed;
+            speedDisplay.innerText = Math.round(speed);
+
+            if (speed > currentMaxSpeed) {
+                currentMaxSpeed = speed;
+                maxSpeedDisplay.innerText = currentMaxSpeed.toFixed(1);
+            }
+
+            const angle = MIN_ANGLE +
+                (Math.min(speed, gaugeMaxSpeed) / gaugeMaxSpeed) *
+                (MAX_ANGLE - MIN_ANGLE);
+
+            needle.style.transform = `rotate(${angle + 125}deg)`;
+        }
+
+        // --- HAVERSINE PARA DISTÂNCIA DO GPS ---
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        // --- GPS EM TEMPO REAL ---
+        function startGPS() {
+            if (!("geolocation" in navigator)) {
+                alert("Este navegador não oferece suporte à geolocalização.");
+                return;
+            }
+
+            watchId = navigator.geolocation.watchPosition((position) => {
+                    if (!isRunning || isPaused) return;
+
+                    let speed = position.coords.speed;
+                    if (speed === null || isNaN(speed) || speed < 0) {
+                        speed = 0;
+                    } else {
+                        speed = speed * 3.6;
+                    }
+
+                    if (speed < 1.5) speed = 0;
+
+                    updateSpeed(speed);
+                    recordRoutePoint(position, speed);
+
+                    if (lastPosition && speed > 0) {
+                        const dist = calculateDistance(
+                            lastPosition.coords.latitude,
+                            lastPosition.coords.longitude,
+                            position.coords.latitude,
+                            position.coords.longitude
+                        );
+
+                        if (dist < 0.1) {
+                            tripOdometer += dist;
+                            totalOdometer += dist;
+
+                            if (currentRoute) {
+                                currentRoute.distancia =
+                                    (currentRoute.distancia || 0) + dist;
+                                persistCurrentRoute();
+                            }
+
+                            localStorage.setItem('ebike_total_odo', totalOdometer);
+                            localStorage.setItem('ebike_trip_odo', tripOdometer);
+
+                            updateTripDisplays(tripOdometer);
+                            totalOdoDisplay.innerText = `${totalOdometer.toFixed(1)} km`;
+                            updateMechanicalOdometer(totalOdometer);
+                        }
+                    }
+                    lastPosition = position;
+
+                    if (speed > 0) {
+                        totalTimeSeconds++;
+                        totalSpeedAccumulator += speed;
+                        samplesCount++;
+                        avgSpeedDisplay.innerText = (totalSpeedAccumulator / samplesCount).toFixed(1);
+                    }
+
+                }, (error) => {
+                    console.log("Erro GPS:", error.message);
+
+                    if (error.code === 1) {
+                        alert("Permissão de localização negada. Autorize o GPS para este site no navegador.");
+                    } else if (error.code === 2) {
+                        console.log("Posição GPS indisponível no momento.");
+                    } else if (error.code === 3) {
+                        console.log("Tempo limite ao obter posição GPS.");
+                    }
+                }, {
+                    enableHighAccuracy: true,
+                    maximumAge: 1000,
+                    timeout: 5000
+                });
+        }
+
+        function stopGPS() {
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+            lastPosition = null;
+        }
+
+        // --- CONTROLES: INICIAR / PAUSAR / PARAR ---
+        btnToggle.addEventListener('click', () => {
+            if (!isRunning) {
+                // Iniciar Pedal
+                if (!beginRouteRecording()) return;
+
+                isRunning = true;
+                isPaused = false;
+                btnToggle.innerText = '❚❚ PAUSAR';
+                btnToggle.className = 'btn-control btn-pause';
+                btnStop.style.display = 'block';
+                requestWakeLock();
+                startGPS();
+                checkAlarmLoop();
+            } else if (!isPaused) {
+                // Pausar Pedal
+                isPaused = true;
+                routePauseStartedAt = Date.now();
+                btnToggle.innerText = '▶ CONTINUAR';
+                btnToggle.className = 'btn-control btn-start';
+                //releaseWakeLock();
+				requestWakeLock()
+                bellElement.classList.remove('bell-alarm');
+                updateSpeed(0);
+
+            } else {
+                // Retomar Pedal
+                if (routePauseStartedAt !== null) {
+                    routePausedMs += Date.now() - routePauseStartedAt;
+                    routePauseStartedAt = null;
+                }
+
+                isPaused = false;
+                btnToggle.innerText = '❚❚ PAUSAR';
+                btnToggle.className = 'btn-control btn-pause';
+                requestWakeLock();
+            }
+        });
+
+        btnStop.addEventListener('click', () => {
+            if (confirm("Deseja finalizar o pedal atual e salvar esta rota?")) {
+
+                // Salva a rota ANTES de zerar média/máxima.
+                finalizeCurrentRoute();
+
+                isRunning = false;
+                isPaused = false;
+
+                currentMaxSpeed = 0;
+                totalSpeedAccumulator = 0;
+                samplesCount = 0;
+                totalTimeSeconds = 0;
+
+                avgSpeedDisplay.innerText = '0.0';
+                maxSpeedDisplay.innerText = '0.0';
+
+                btnToggle.innerText = '▶ INICIAR';
+                btnToggle.className = 'btn-control btn-start';
+                btnStop.style.display = 'none';
+
+                releaseWakeLock();
+                stopGPS();
+
+                if (alarmInterval) {
+                    clearInterval(alarmInterval);
+                    alarmInterval = null;
+                }
+
+                bellElement.classList.remove('bell-alarm');
+                updateSpeed(0);
+                updateRouteStatus();
+            }
+        });
+
+        // --- RESET DA TRIP (PARCIAL) ---
+        btnResetTrip.addEventListener('click', () => {
+            if (confirm("Deseja zerar a parcial (TRIP)?")) {
+                tripOdometer = 0.0;
+                localStorage.setItem('ebike_trip_odo', 0.0);
+                updateTripDisplays(0.0);
+            }
+        });
+
+        // --- EXPORTAÇÃO DAS ROTAS ---
+        btnExport.addEventListener('click', exportPendingRoutes);
+
+        // --- MODAL DE CONFIGURAÇÕES ---
+        btnOpenSettings.addEventListener('click', () => {
+            inputOdo.value = totalOdometer.toFixed(1);
+            inputGaugeMax.value = gaugeMaxSpeed;
+            inputLimit.value = speedLimit;
+            inputVolume.value = Math.round(alarmVolume * 100);
+            volumeDisplay.innerText = `${Math.round(alarmVolume * 100)}%`;
+            modalSettings.style.display = 'flex';
+        });
+
+        inputVolume.addEventListener('input', () => {
+            volumeDisplay.innerText = `${inputVolume.value}%`;
+        });
+
+        btnSaveSettings.addEventListener('click', () => {
+            totalOdometer = parseFloat(inputOdo.value) || 0;
+            speedLimit = parseFloat(inputLimit.value) || 24;
+            alarmVolume = Math.max(0, Math.min(1, (parseFloat(inputVolume.value) || 0) / 100));
+
+            let newGaugeMax = parseFloat(inputGaugeMax.value);
+
+            if (isNaN(newGaugeMax)) {
+                newGaugeMax = 50;
+            }
+
+            // Mantém a escala dentro de uma faixa válida.
+            gaugeMaxSpeed = Math.max(
+                MIN_GAUGE_SPEED,
+                Math.min(MAX_GAUGE_SPEED, newGaugeMax)
+            );
+
+            // O limite de alerta não pode ficar acima da escala.
+            speedLimit = Math.min(speedLimit, gaugeMaxSpeed);
+
+            inputGaugeMax.value = gaugeMaxSpeed;
+            inputLimit.value = speedLimit;
+
+            localStorage.setItem('ebike_total_odo', totalOdometer);
+            localStorage.setItem('ebike_speed_limit', speedLimit);
+            localStorage.setItem('ebike_gauge_max_speed', gaugeMaxSpeed);
+            localStorage.setItem('ebike_alarm_volume', alarmVolume);
+
+            totalOdoDisplay.innerText = `${totalOdometer.toFixed(1)} km`;
+            gaugeMaxLabel.innerText = `0–${gaugeMaxSpeed}`;
+            updateGaugeScaleLabels();
+            updateMechanicalOdometer(totalOdometer);
+            modalSettings.style.display = 'none';
+        });
+    </script>
+
+    <!-- Canal oculto usado para enviar rotas ao Google sem depender de CORS -->
+    <iframe
+        name="ebike-google-post"
+        id="ebike-google-post"
+        style="display:none"
+        title="Google route export">
+    </iframe>
+
+</body>
+</html>
