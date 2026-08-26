@@ -60,13 +60,13 @@
         }
 
         .needle {
-            stroke: #ff3344;
-            stroke-width: 3.5;
-            stroke-linecap: round;
-            /* Centro exato da rosca do ponteiro */
-            transform-origin: 190px 190px; 
-            transition: transform 0.15s cubic-bezier(0.1, 0.5, 0.2, 1);
-            filter: drop-shadow(0px 0px 8px rgba(255, 51, 68, 0.9));
+			stroke: #ff3344;
+			stroke-width: 3.5;
+			stroke-linecap: round;
+			/* Ponto de rotação alinhado ao centro real (X: 190px, Y: 204px) */
+			transform-origin: 190px 204px; 
+			transition: transform 0.15s cubic-bezier(0.1, 0.5, 0.2, 1);
+			filter: drop-shadow(0px 0px 8px rgba(255, 51, 68, 0.9));
         }
 
         .needle-cap {
@@ -77,7 +77,7 @@
 
         /* Ícone do alarme / sino pulsante */
         .bell-icon {
-            font-size: 26px;
+            font-size: 64px;
             transition: all 0.3s;
         }
 
@@ -385,11 +385,11 @@
         <svg class="gauge-svg" viewBox="0 0 380 680">
             <!-- Ícone do Sino de Alerta -->
             <g transform="translate(190, 80)">
-                <text class="bell-icon" id="bell-element" x="0" y="0" text-anchor="middle">🔔</text>
+                <text class="bell-icon" id="bell-element" x="0" y="60" text-anchor="middle">🔔</text>
             </g>
             <!-- Ponteiro partindo da rosca no centro (x:190, y:190) -->
-            <line id="needle" class="needle" x1="190" y1="190" x2="105" y2="245" />
-            <circle class="needle-cap" cx="190" cy="190" r="7" />
+            <line id="needle" class="needle" x1="190" y1="204" x2="90" y2="265" />
+            <circle class="needle-cap" cx="190" cy="204" r="7" />
         </svg>
 
         <!-- OVERLAY 2: VELOCIDADE CENTRAL DIGITAL -->
@@ -488,6 +488,7 @@
 
         // --- INTEGRAÇÃO COM GOOGLE APPS SCRIPT ---
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw4STNR77PoKLSbCaqGuCDgmK5CwGn-7ZRoLpkiRqxrfz4ARGfneUr4XNCnrQKMaDjIBw/exec";
+		
         const MAX_LOCAL_ROUTES = 10;
         const ROUTES_STORAGE_KEY = 'ebike_routes';
         const CURRENT_ROUTE_KEY = 'ebike_current_route';
