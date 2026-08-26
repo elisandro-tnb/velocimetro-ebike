@@ -795,19 +795,39 @@
         const btnExport = document.getElementById('btn-export');
 
         // RENDERIZAÇÃO DOS DÍGITOS NOS RECERTES
-        function updateTripDisplays(value) {
-            const formatted = Math.min(Math.max(0, value), 999.9).toFixed(1).padStart(4, '0');
-            const digits = formatted.replace('.', '');
-            const elements = tripContainer.querySelectorAll('.digit');
-            elements.forEach((el, idx) => { el.innerText = digits[idx] || '0'; });
-        }
+ // --- RENDERIZAÇÃO CORRIGIDA DOS DÍGITOS NOS RECERTES ---
 
-        function updateMechanicalOdometer(value) {
-            const formatted = Math.max(0, value).toFixed(1).padStart(7, '0');
-            const digits = formatted.replace('.', '');
-            const elements = odoWindow.querySelectorAll('.digit');
-            elements.forEach((el, idx) => { el.innerText = digits[idx] || '0'; });
-        }
+		function updateTripDisplays(value) {
+			// Garante valor limite entre 0 e 999.9
+			const val = Math.min(Math.max(0, value), 999.9);
+			
+			// Separa a parte inteira e a decimal
+			const inteiro = Math.floor(val).toString().padStart(3, '0'); // 3 dígitos para os inteiros
+			const decimal = Math.floor((val % 1) * 10).toString();       // 1 dígito para o decimal vermelho
+			
+			const digits = inteiro + decimal; // Exemplo para 1.2 km -> "0001" (3 brancos + 1 vermelho)
+			
+			const elements = tripContainer.querySelectorAll('.digit');
+			elements.forEach((el, idx) => { 
+				el.innerText = digits[idx] || '0'; 
+			});
+		}
+
+		function updateMechanicalOdometer(value) {
+			// Garante valor positivo
+			const val = Math.max(0, value);
+			
+			// Separa a parte inteira e a decimal (7 inteiros + 1 decimal vermelho = 8 dígitos no total)
+			const inteiro = Math.floor(val).toString().padStart(7, '0'); // 7 dígitos para os inteiros
+			const decimal = Math.floor((val % 1) * 10).toString();       // 1 dígito para o decimal vermelho
+			
+			const digits = inteiro + decimal; // Exemplo para 12.4 km -> "00000124"
+			
+			const elements = odoWindow.querySelectorAll('.digit');
+			elements.forEach((el, idx) => { 
+				el.innerText = digits[idx] || '0'; 
+			});
+		}
 
         updateTripDisplays(tripOdometer);
         updateMechanicalOdometer(totalOdometer);
