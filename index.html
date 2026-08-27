@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Bike GPS - Painel Pro (Overlay PNG)</title>
+    <title> E-Bike GPS - Painel Pro </title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
         * {
@@ -20,7 +20,7 @@
             align-items: center;
             min-height: 100vh;
             font-family: 'Orbitron', sans-serif;
-            padding: 10px;
+            padding: 5px;
         }
 
         /* --- CONTÊINER PRINCIPAL (DIMENSÕES DA SUA IMAGEM BASE) --- */
@@ -95,7 +95,7 @@
         /* --- OVERLAY 2: VELOCIDADE CENTRAL DIGITAL --- */
         .speed-digital {
             position: absolute;
-            top: 236px;
+            top: 240px;
             left: 140px;
             width: 100px;
             height: 28px;
@@ -111,8 +111,8 @@
         /* --- OVERLAY 3: TRIP MECÂNICO --- */
         .trip-display {
             position: absolute;
-            top: 312px;
-            left: 140px;
+            top: 310px;
+            left: 150px;
             width: 100px;
             height: 38px;
             display: flex;
@@ -125,8 +125,8 @@
         /* --- OVERLAY 4: MÉDIA E MÁXIMA --- */
         .avg-display {
             position: absolute;
-            top: 395px;
-            left: 80px;
+            top: 405px;
+            left: 90px;
             width: 80px;
             height: 25px;
             display: flex;
@@ -139,8 +139,8 @@
 
         .max-display {
             position: absolute;
-            top: 395px;
-            left: 247px;
+            top: 405px;
+            left: 265px;
             width: 80px;
             height: 25px;
             display: flex;
@@ -154,27 +154,27 @@
         /* --- OVERLAY 5: KM TOTAL --- */
         .odo-total-display {
             position: absolute;
-            top: 488px;
-            left: 48px;
-            width: 284px;
-            height: 38px;
+            top: 495px;
+            left: 45px;
+            width: 280px;
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 2px;
+            gap: 3px;
         }
 
         /* DÍGITOS MECÂNICOS SOBREPOSTOS */
         .digit {
-            width: 30px;
-            height: 38px;
-            background: linear-gradient(180deg, #f0f2f5 0%, #c4c8ce 50%, #83888f 100%);
-            color: #0d0f12;
+            width: 40px;  /* Largura de cada caixinha */
+            height: 38px; /* Altura de cada caixinha */
+            background: linear-gradient(180deg, #f0f2f5 0%, #c4c8ce 50%, #83888f 100%); /* Efeito 3D */
+            color: #0d0f12; /* Cor do número */
             font-size: 1.9rem;
             font-weight: 900;
             border-radius: 3px;
             display: flex;
-            align-items: center;
+            align-items: center; /* Centraliza o número dentro da caixinha */
             justify-content: center;
             box-shadow: inset 0 1px 2px rgba(255,255,255,0.9), 0 2px 4px rgba(0,0,0,0.5);
             border: 1px solid #3a4048;
@@ -194,7 +194,7 @@
         /* --- OVERLAY 6: CONTROLES ESTILIZADOS SOBREPOSTOS --- */
         .controls-wrapper {
             position: absolute;
-            top: 538px;
+            top: 555px;
             left: 25px;
             width: 330px;
             display: flex;
@@ -305,10 +305,10 @@
         /* Status da Rota */
         .route-status-overlay {
             text-align: center;
-            font-size: 0.7rem;
+            font-size: 0.9rem;
             font-family: 'Share Tech Mono', monospace;
             color: #00e676;
-            margin-top: -2px;
+            margin-top: -9px;
         }
 
         .route-status-overlay.warn { color: #ffb300; }
@@ -374,6 +374,31 @@
             cursor: pointer;
             font-family: 'Orbitron', sans-serif;
         }
+		
+		
+		/* Trilho de fundo apagado */
+		.gauge-track {
+			fill: none;
+			stroke: rgba(255, 255, 255, 0.05);
+			stroke-width: 12;
+		}
+
+		/* O Rastro Colorido */
+		.gauge-glow {
+			fill: none;
+			stroke: url(#glow-gradient);
+			stroke-width: 8;
+			stroke-linecap: round;
+			filter: drop-shadow(0px 0px 8px #00f0ff);
+
+			transition: stroke-dasharray 0.15s cubic-bezier(0.1, 0.5, 0.2, 1);			
+			transform-origin: 190px 204px;
+			
+			/* MODIFIQUE AQUI: Ajuste o ângulo inicial para alinhar o rastro com o zero */
+			transform: rotate(145deg); /* Teste 145deg (ou ajuste fino entre 140deg e 150deg) */
+		}			
+		
+		
     </style>
 </head>
 <body>
@@ -388,11 +413,41 @@
             <!-- Ícone do Sino de Alerta -->
             <g transform="translate(190, 80)">
                 <text class="bell-icon" id="bell-element" x="0" y="60" text-anchor="middle">🔔</text>
-            </g>
+            </g>	
+
+			<defs>
+					<!-- Definição do Gradiente Néon -->
+				<linearGradient
+					id="glow-gradient"
+					
+					x1="100%"
+					y1="0%"
+					x2="0%"
+					y2="0%">
+
+					<stop offset="0%"   stop-color="#00ff66" />
+					<stop offset="35%"  stop-color="#7dff00" />
+					<stop offset="68%"  stop-color="#ffcc00" />
+					<!-- região laranja maior -->
+					<stop offset="70%"  stop-color="#ff8c00" />
+					<stop offset="90%"  stop-color="#ff6500" />
+					<!-- vermelho só no final -->
+					<stop offset="100%" stop-color="#ff0000" />
+
+				</linearGradient>
+				</defs>
+
+
+			
+          
+			<!-- Arco Iluminado (O Rastro de Néon) -->
+			<circle id="gauge-glow" class="gauge-glow" cx="190" cy="204" r="140" />
 			
             <!-- Ponteiro partindo da rosca no centro (x:190, y:190) -->
             <line id="needle" class="needle" x1="190" y1="204" x2="90" y2="265" />
             <circle class="needle-cap" cx="190" cy="204" r="7" />
+			
+
         </svg>
 
         <!-- OVERLAY 2: VELOCIDADE CENTRAL DIGITAL -->
@@ -774,6 +829,7 @@
         }
 
         // --- ELEMENTOS DOM ---
+		const gaugeGlow = document.getElementById('gauge-glow');
         const speedDisplay = document.getElementById('speed-display');
         const needle = document.getElementById('needle');
         const maxSpeedDisplay = document.getElementById('max-speed');
@@ -794,6 +850,7 @@
         const volumeDisplay = document.getElementById('volume-display');
         const btnExport = document.getElementById('btn-export');
 
+		
         // RENDERIZAÇÃO DOS DÍGITOS NOS RECERTES
  // --- RENDERIZAÇÃO CORRIGIDA DOS DÍGITOS NOS RECERTES ---
 
@@ -818,7 +875,7 @@
 			const val = Math.max(0, value);
 			
 			// Separa a parte inteira e a decimal (7 inteiros + 1 decimal vermelho = 8 dígitos no total)
-			const inteiro = Math.floor(val).toString().padStart(7, '0'); // 7 dígitos para os inteiros
+			const inteiro = Math.floor(val).toString().padStart(6, '0'); // 7 dígitos para os inteiros
 			const decimal = Math.floor((val % 1) * 10).toString();       // 1 dígito para o decimal vermelho
 			
 			const digits = inteiro + decimal; // Exemplo para 12.4 km -> "00000124"
@@ -834,6 +891,7 @@
         inputVolume.value = Math.round(alarmVolume * 100);
         volumeDisplay.innerText = `${Math.round(alarmVolume * 100)}%`;
         updateRouteStatus();
+		updateSpeed(0);
 
         // --- WAKE LOCK E ÁUDIO ---
         async function requestWakeLock() {
@@ -873,21 +931,31 @@
                 }
             }, 2500);
         }
+function updateSpeed(speed) {
+    currentSpeed = speed;
+    speedDisplay.innerText = speed.toFixed(1);
 
-        function updateSpeed(speed) {
-            currentSpeed = speed;
-            speedDisplay.innerText = speed.toFixed(1);
+    if (speed > currentMaxSpeed) {
+        currentMaxSpeed = speed;
+        maxSpeedDisplay.innerText = currentMaxSpeed.toFixed(1);
+    }
 
-            if (speed > currentMaxSpeed) {
-                currentMaxSpeed = speed;
-                maxSpeedDisplay.innerText = currentMaxSpeed.toFixed(1);
-            }
+    // --- PONTEIRO ---
+    const angle = MIN_ANGLE + (Math.min(speed, gaugeMaxSpeed) / gaugeMaxSpeed) * (MAX_ANGLE - MIN_ANGLE);
+    needle.style.transform = `rotate(${angle + 125}deg)`;
 
-            // Ângulo ajustado dinamicamente para o limite definido (padrão 50)
-            const angle = MIN_ANGLE + (Math.min(speed, gaugeMaxSpeed) / gaugeMaxSpeed) * (MAX_ANGLE - MIN_ANGLE);
-            needle.style.transform = `rotate(${angle + 125}deg)`;
-        }
+    // --- RASTRO NÉON (CALIBRADO) ---
+    const CIRCUMFERENCE = 2 * Math.PI * 140; // ~879.64px
+    
+    // REDUZIMOS O ARCO TOTAL DE 250° PARA 215° PARA CASAR COM O PONTEIRO
+    const GAUGE_ARC_LENGTH = CIRCUMFERENCE * (250 / 360); 
 
+    const ratio = Math.min(speed, gaugeMaxSpeed) / gaugeMaxSpeed;
+    const currentGlowLength = GAUGE_ARC_LENGTH * ratio;
+
+    gaugeGlow.style.strokeDasharray = `${currentGlowLength} ${CIRCUMFERENCE}`;
+    gaugeGlow.style.strokeDashoffset = '0';
+}
         function calculateDistance(lat1, lon1, lat2, lon2) {
             const R = 6371;
             const dLat = (lat2 - lat1) * Math.PI / 180;
