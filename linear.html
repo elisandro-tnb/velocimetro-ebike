@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Gauge por Segmentos - Exemplo Didático
+    </title>
+
+    <style>
+
+        /* =====================================================
+           BLOCO 1
+           CONFIGURAÇÃO GERAL
+           ===================================================== */
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+
+            min-height: 100vh;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            background: #0b0d10;
+
+            font-family:
+                Arial,
+                sans-serif;
+
+            color: white;
+        }
+
+
+        /* =====================================================
+           BLOCO 2
+           PAINEL
+           ===================================================== */
+
+        .painel {
+            width: 360px;
+
+            padding: 20px;
+
+            border-radius: 20px;
+
+            background:
+                linear-gradient(
+                    180deg,
+                    #171b20,
+                    #0d0f12
+                );
+
+            box-shadow:
+                0 10px 30px
+                rgba(0,0,0,0.7);
+        }
+
+
+        /* =====================================================
+           BLOCO 3
+           SVG
+           ===================================================== */
+
+        svg {
+            width: 100%;
+            height: auto;
+
+            overflow: visible;
+        }
+
+
+        /* =====================================================
+           BLOCO 4
+           FUNDO DO GAUGE
+           ===================================================== */
+
+        .gauge-bg {
+            fill: none;
+
+            stroke:
+                #242930;
+
+            stroke-width:
+                18;
+
+            stroke-linecap:
+                round;
+        }
+
+
+        /* =====================================================
+           BLOCO 5
+           SEGMENTOS COLORIDOS
+
+           Cada classe representa uma faixa REAL
+           de velocidade.
+           ===================================================== */
+
+        .segmento {
+            fill: none;
+
+            stroke-width:
+                12;
+
+            stroke-linecap:
+                butt;
+        }
+
+
+        /* 0 até 20 km/h */
+
+        .verde {
+            stroke:
+                #00ff66;
+        }
+
+
+        /* 20 até 30 km/h */
+
+        .amarelo {
+            stroke:
+                #ffcc00;
+        }
+
+
+        /* 30 até 40 km/h */
+
+        .laranja {
+            stroke:
+                #ff8c00;
+        }
+
+
+        /* 40 até 50 km/h */
+
+        .vermelho {
+            stroke:
+                #ff2233;
+        }
+
+
+        /* =====================================================
+           BLOCO 6
+           RASTRO DE VELOCIDADE
+
+           Esta segunda linha cresce por cima
+           do gauge.
+           ===================================================== */
+
+        .rastro {
+            fill: none;
+
+            stroke:
+                white;
+
+            stroke-width:
+                4;
+
+            stroke-linecap:
+                round;
+
+            filter:
+                drop-shadow(
+                    0 0 6px
+                    rgba(
+                        255,
+                        255,
+                        255,
+                        0.8
+                    )
+                );
+
+            transition:
+                stroke-dashoffset
+                0.15s
+                linear;
+        }
+
+
+        /* =====================================================
+           BLOCO 7
+           PONTEIRO
+           ===================================================== */
+
+        .needle {
+            stroke:
+                #ff3344;
+
+            stroke-width:
+                4;
+
+            stroke-linecap:
+                round;
+
+            transform-origin:
+                160px 150px;
+
+            filter:
+                drop-shadow(
+                    0 0 6px
+                    rgba(
+                        255,
+                        51,
+                        68,
+                        0.8
+                    )
+                );
+
+            transition:
+                transform
+                0.15s
+                linear;
+        }
+
+
+        .needle-cap {
+            fill:
+                #15191e;
+
+            stroke:
+                #ff3344;
+
+            stroke-width:
+                2;
+        }
+
+
+        /* =====================================================
+           BLOCO 8
+           NÚMEROS DA ESCALA
+           ===================================================== */
+
+        .numero {
+            fill:
+                #e8edf2;
+
+            font-size:
+                18px;
+
+            font-weight:
+                bold;
+
+            text-anchor:
+                middle;
+        }
+
+
+        /* =====================================================
+           BLOCO 9
+           VELOCIDADE DIGITAL
+           ===================================================== */
+
+        .velocidade {
+            text-align: center;
+
+            font-size:
+                42px;
+
+            font-weight:
+                bold;
+
+            color:
+                #00e5ff;
+
+            margin-top:
+                -35px;
+        }
+
+
+        .unidade {
+            text-align: center;
+
+            color:
+                #83909c;
+
+            font-size:
+                13px;
+        }
+
+
+        /* =====================================================
+           BLOCO 10
+           CONTROLE DO SIMULADOR
+           ===================================================== */
+
+        .controle {
+            margin-top:
+                20px;
+        }
+
+
+        input[type="range"] {
+            width: 100%;
+        }
+
+
+        .legenda {
+            margin-top:
+                14px;
+
+            font-size:
+                12px;
+
+            line-height:
+                1.6;
+
+            color:
+                #aeb7bf;
+        }
+
+    </style>
+</head>
+
+
+<body>
+
+<div class="painel">
+
+
+    <!-- =====================================================
+         BLOCO HTML 1
+         SVG DO VELOCÍMETRO
+         ===================================================== -->
+
+    <svg
+        viewBox="0 0 320 280"
+    >
+
+
+        <!-- =================================================
+             FUNDO COMPLETO DO GAUGE
+             ================================================= -->
+
+        <path
+
+            class="gauge-bg"
+
+            d="
+                M 55 225
+                A 120 120
+                0 1 1
+                265 225
+            "
+
+        />
+
+
+
+        <!-- =================================================
+             SEGMENTO 0–20 km/h
+
+             VERDE
+             ================================================= -->
+
+        <path
+
+            class="
+                segmento
+                verde
+            "
+
+            d="
+                M 55 225
+                A 120 120
+                0 0 1
+                88 72
+            "
+
+        />
+
+
+
+        <!-- =================================================
+             SEGMENTO 20–30 km/h
+
+             AMARELO
+             ================================================= -->
+
+        <path
+
+            class="
+                segmento
+                amarelo
+            "
+
+            d="
+                M 88 72
+                A 120 120
+                0 0 1
+                160 30
+            "
+
+        />
+
+
+
+        <!-- =================================================
+             SEGMENTO 30–40 km/h
+
+             LARANJA
+             ================================================= -->
+
+        <path
+
+            class="
+                segmento
+                laranja
+            "
+
+            d="
+                M 160 30
+                A 120 120
+                0 0 1
+                232 72
+            "
+
+        />
+
+
+
+        <!-- =================================================
+             SEGMENTO 40–50 km/h
+
+             VERMELHO
+             ================================================= -->
+
+        <path
+
+            class="
+                segmento
+                vermelho
+            "
+
+            d="
+                M 232 72
+                A 120 120
+                0 0 1
+                265 225
+            "
+
+        />
+
+
+
+        <!-- =================================================
+             RASTRO COMPLETO
+
+             O JavaScript vai "revelar"
+             somente a parte correspondente
+             à velocidade atual.
+             ================================================= -->
+
+        <path
+
+            id="rastro"
+
+            class="rastro"
+
+            d="
+                M 55 225
+                A 120 120
+                0 1 1
+                265 225
+            "
+
+        />
+
+
+
+        <!-- =================================================
+             NÚMEROS DA ESCALA
+             ================================================= -->
+
+        <text
+            x="48"
+            y="245"
+            class="numero">
+            0
+        </text>
+
+
+        <text
+            x="34"
+            y="150"
+            class="numero">
+            10
+        </text>
+
+
+        <text
+            x="88"
+            y="67"
+            class="numero">
+            20
+        </text>
+
+
+        <text
+            x="232"
+            y="67"
+            class="numero">
+            30
+        </text>
+
+
+        <text
+            x="286"
+            y="150"
+            class="numero">
+            40
+        </text>
+
+
+        <text
+            x="274"
+            y="245"
+            class="numero">
+            50
+        </text>
+
+
+
+        <!-- =================================================
+             PONTEIRO
+             ================================================= -->
+
+        <line
+
+            id="needle"
+
+            class="needle"
+
+            x1="160"
+            y1="150"
+
+            x2="70"
+            y2="200"
+
+        />
+
+
+        <!-- Centro -->
+
+        <circle
+
+            class="needle-cap"
+
+            cx="160"
+            cy="150"
+
+            r="9"
+
+        />
+
+
+    </svg>
+
+
+
+    <!-- =====================================================
+         BLOCO HTML 2
+         VELOCIDADE DIGITAL
+         ===================================================== -->
+
+    <div
+        id="velocidade"
+        class="velocidade">
+        0
+    </div>
+
+
+    <div
+        class="unidade">
+        KM/H
+    </div>
+
+
+
+    <!-- =====================================================
+         BLOCO HTML 3
+         SLIDER PARA TESTE
+         ===================================================== -->
+
+    <div
+        class="controle"
+    >
+
+        <input
+
+            id="slider"
+
+            type="range"
+
+            min="0"
+
+            max="50"
+
+            step="0.1"
+
+            value="0"
+
+        >
+
+    </div>
+
+
+
+    <div
+        class="legenda"
+    >
+
+        <strong>
+            Faixas:
+        </strong>
+
+        <br>
+
+        0–20 km/h = verde
+
+        <br>
+
+        20–30 km/h = amarelo
+
+        <br>
+
+        30–40 km/h = laranja
+
+        <br>
+
+        40–50 km/h = vermelho
+
+    </div>
+
+
+</div>
+
+
+
+<script>
+
+
+    /* =====================================================
+       BLOCO JS 1
+       CONFIGURAÇÃO DA ESCALA
+       ===================================================== */
+
+    const MAX_SPEED =
+        50;
+
+
+    const MIN_ANGLE =
+        -125;
+
+
+    const MAX_ANGLE =
+        125;
+
+
+
+    /* =====================================================
+       BLOCO JS 2
+       ELEMENTOS
+       ===================================================== */
+
+    const needle =
+        document.getElementById(
+            "needle"
+        );
+
+
+    const rastro =
+        document.getElementById(
+            "rastro"
+        );
+
+
+    const velocidade =
+        document.getElementById(
+            "velocidade"
+        );
+
+
+    const slider =
+        document.getElementById(
+            "slider"
+        );
+
+
+
+    /* =====================================================
+       BLOCO JS 3
+       PREPARA O RASTRO
+       ===================================================== */
+
+
+    /*
+     * Descobre o comprimento total
+     * do arco SVG.
+     */
+
+    const comprimentoArco =
+        rastro
+            .getTotalLength();
+
+
+
+    /*
+     * Transformamos o arco inteiro
+     * em um segmento tracejado.
+     */
+
+    rastro.style.strokeDasharray =
+
+        comprimentoArco;
+
+
+
+    /*
+     * Inicialmente escondemos
+     * o rastro inteiro.
+     */
+
+    rastro.style.strokeDashoffset =
+
+        comprimentoArco;
+
+
+
+    /* =====================================================
+       BLOCO JS 4
+       ATUALIZA VELOCIDADE
+       ===================================================== */
+
+    function setSpeed(
+        speed
+    ) {
+
+
+        /*
+         * Limita entre 0 e 50.
+         */
+
+        const valor =
+
+            Math.min(
+
+                Math.max(
+                    speed,
+                    0
+                ),
+
+                MAX_SPEED
+
+            );
+
+
+
+        /* -------------------------------------------------
+           VELOCIDADE DIGITAL
+           ------------------------------------------------- */
+
+        velocidade.innerText =
+
+            valor.toFixed(1);
+
+
+
+        /* -------------------------------------------------
+           PONTEIRO
+           ------------------------------------------------- */
+
+
+        /*
+         * Converte velocidade
+         * para ângulo.
+         */
+
+        const angle =
+
+            MIN_ANGLE
+
+            +
+
+            (
+                valor /
+                MAX_SPEED
+            )
+
+            *
+
+            (
+                MAX_ANGLE -
+                MIN_ANGLE
+            );
+
+
+
+        /*
+         * Compensação da posição
+         * inicial da linha.
+         */
+
+        needle.style.transform =
+
+            `rotate(${angle + 125}deg)`;
+
+
+
+        /* -------------------------------------------------
+           RASTRO
+           ------------------------------------------------- */
+
+
+        /*
+         * Porcentagem da escala.
+         *
+         * Exemplo:
+         *
+         * 25 km/h
+         *
+         * 25 / 50
+         *
+         * =
+         *
+         * 0.5
+         */
+
+        const percentual =
+
+            valor /
+            MAX_SPEED;
+
+
+
+        /*
+         * Quanto do arco
+         * deve continuar escondido.
+         */
+
+        const offset =
+
+            comprimentoArco
+
+            *
+
+            (
+                1 -
+                percentual
+            );
+
+
+
+        rastro.style.strokeDashoffset =
+
+            offset;
+
+    }
+
+
+
+    /* =====================================================
+       BLOCO JS 5
+       SLIDER DO TESTE
+       ===================================================== */
+
+    slider.addEventListener(
+
+        "input",
+
+        () => {
+
+
+            setSpeed(
+
+                parseFloat(
+                    slider.value
+                )
+
+            );
+
+        }
+
+    );
+
+
+
+    /* =====================================================
+       BLOCO JS 6
+       PRIMEIRA RENDERIZAÇÃO
+       ===================================================== */
+
+    setSpeed(
+        0
+    );
+
+
+</script>
+
+
+</body>
+
+</html>
