@@ -6,6 +6,9 @@
     <title> E-Bike GPS - Painel Pro </title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
+	
+		@import url('https://fonts.cdnfonts.com/css/digital-7-mono');
+	
         * {
             box-sizing: border-box;
             margin: 0;
@@ -74,21 +77,35 @@
             stroke-width: 2.5;
         }
 
-        /* Ícone do alarme / sino pulsante */
-        .bell-icon {
-            font-size: 32px;
-            transition: all 0.3s;
-			display: none;
+        /* =====================================================
+           PLACA DO LIMITE DE VELOCIDADE
+           - substitui o sino
+           - fica escondida normalmente
+           - aparece somente quando o alerta é acionado
+           ===================================================== */
+        .speed-limit-sign {
+            display: none;
+            opacity: 0.9;
+            transition: opacity 0.3s, filter 0.3s;
         }
 
-        .bell-alarm {
-		    display: inline-block; 
-            animation: pulse-bell 0.4s infinite alternate;
+        /* Mantemos a classe bell-alarm porque a lógica existente
+           já usa add/remove dessa classe no alerta. */
+        .speed-limit-sign.bell-alarm {
+            display: block;
+            animation: pulse-limit-sign 0.4s infinite alternate;
         }
 
-        @keyframes pulse-bell {
-            from { transform: scale(1); filter: drop-shadow(0 0 2px red); }
-            to { transform: scale(1.4); filter: drop-shadow(0 0 12px red); }
+        @keyframes pulse-limit-sign {
+            from {
+                opacity: 0.85;
+                filter: drop-shadow(0 0 3px rgba(255, 0, 0, 0.55));
+            }
+
+            to {
+                opacity: 1;
+                filter: drop-shadow(0 0 12px rgba(255, 0, 0, 1));
+            }
         }
 
         /* --- OVERLAY 2: VELOCIDADE CENTRAL DIGITAL --- */
@@ -102,9 +119,10 @@
             align-items: center;
             justify-content: center;
             color: #00d8ff;
-            font-size: 1.5rem;
+		    font-family: 'Digital-7 Mono', sans-serif;
+            font-size: 42px;
             font-weight: 900;
-            text-shadow: 0 0 10px rgba(0, 216, 255, 0.6);
+            text-shadow: 0 0 10px rgba(0, 216, 255, 0.6);			
         }
 
         /* --- OVERLAY 3: TRIP MECÂNICO --- */
@@ -165,10 +183,12 @@
 
         /* DÍGITOS MECÂNICOS SOBREPOSTOS */
         .digit {
-            width: 40px;  /* Largura de cada caixinha */
+		
+            flex: 0 0 40px;  /* Largura de cada caixinha */
             height: 38px; /* Altura de cada caixinha */
             background: linear-gradient(180deg, #f0f2f5 0%, #c4c8ce 50%, #83888f 100%); /* Efeito 3D */
             color: #0d0f12; /* Cor do número */
+		
             font-size: 1.8rem;
             font-weight: 900;
             border-radius: 3px;
@@ -409,10 +429,30 @@
 
         <!-- OVERLAY 1: PONTEIRO ANALÓGICO SVG -->
         <svg class="gauge-svg" viewBox="0 0 380 680">
-            <!-- Ícone do Sino de Alerta -->
-            <g transform="translate(190, 80)">
-                <text class="bell-icon" id="bell-element" x="0" y="60" text-anchor="middle">🔔</text>
-            </g>	
+            <!-- =================================================
+                 PLACA DO LIMITE DE VELOCIDADE
+                 Aparece somente durante o alerta.
+                 O id "bell-element" foi mantido de propósito para
+                 preservar toda a lógica existente do alarme.
+                 ================================================= -->
+            <g
+                id="bell-element"
+                class="speed-limit-sign"
+                transform="translate(190, 140)"
+            >
+                <circle cx="0" cy="0" r="22" fill="#ffffff" />
+                <circle cx="0" cy="0" r="20" fill="none" stroke="#ff2020" stroke-width="5" />
+                <text
+                    id="speed-limit-sign-value"
+                    x="0"
+                    y="7"
+                    text-anchor="middle"
+                    font-family="Orbitron, sans-serif"
+                    font-size="17"
+                    font-weight="900"
+                    fill="#111111"
+                >24</text>
+            </g>
 
 			<defs>
 					<!-- Definição do Gradiente Néon -->
@@ -838,6 +878,7 @@
         const tripContainer = document.getElementById('trip-container');
         const odoWindow = document.getElementById('odo-window');
         const bellElement = document.getElementById('bell-element');
+        const speedLimitSignValue = document.getElementById('speed-limit-sign-value');
 
         const modalSettings = document.getElementById('modal-settings');
         const btnOpenSettings = document.getElementById('open-settings');
@@ -873,11 +914,12 @@
 			// Garante valor positivo
 			const val = Math.max(0, value);
 			
-			// Separa a parte inteira e a decimal (7 inteiros + 1 decimal vermelho = 8 dígitos no total)
-			const inteiro = Math.floor(val).toString().padStart(6, '0'); // 7 dígitos para os inteiros
+			// Separa a parte inteira e a decimal (6 inteiros + 1 decimal vermelho = 7 dígitos no total)
+			//  000000-0
+			const inteiro = Math.floor(val).toString().padStart(6, '0'); // 6 dígitos para os inteiros
 			const decimal = Math.floor((val % 1) * 10).toString();       // 1 dígito para o decimal vermelho
 			
-			const digits = inteiro + decimal; // Exemplo para 12.4 km -> "00000124"
+			const digits = inteiro + decimal; // Exemplo para 12.4 km -> "0000124"
 			
 			const elements = odoWindow.querySelectorAll('.digit');
 			elements.forEach((el, idx) => { 
@@ -887,6 +929,7 @@
 
         updateTripDisplays(tripOdometer);
         updateMechanicalOdometer(totalOdometer);
+        speedLimitSignValue.innerText = Math.round(speedLimit);
         inputVolume.value = Math.round(alarmVolume * 100);
         volumeDisplay.innerText = `${Math.round(alarmVolume * 100)}%`;
         updateRouteStatus();
@@ -1116,6 +1159,7 @@ function updateSpeed(speed) {
 
             inputGaugeMax.value = gaugeMaxSpeed;
             inputLimit.value = speedLimit;
+            speedLimitSignValue.innerText = Math.round(speedLimit);
 
             localStorage.setItem('ebike_total_odo', totalOdometer);
             localStorage.setItem('ebike_speed_limit', speedLimit);
